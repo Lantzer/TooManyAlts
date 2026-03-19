@@ -32,7 +32,7 @@ local TooManyAltsLDB = LDB:NewDataObject("TooManyAlts", {
                 if data.level == TooManyAlts_env.MAX_LEVEL then
                     tooltip:AddDoubleLine(
                         TooManyAlts_env.ColorWithClass(data.class, data.name .. "-" .. data.realm),
-                        "Ilvl:" .. data.avgIlvl,
+                        string.format("Ilvl:(%.1f)", data.avgItemLvlEquip),
                         1, 1, 1,
                         1, 0.82, 0
                     )

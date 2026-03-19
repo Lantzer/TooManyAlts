@@ -125,7 +125,7 @@ local function ShowGearForChar(charKey)
     -- Update character header
     TooManyAlts_env.mainFrame.charHeader:SetText(
         TooManyAlts_env.ColorWithClass(data.class, data.name) ..
-        "  |cffffcc00avg ilvl: " .. data.avgIlvl .. "|r"
+        string.format(" |cffffcc00avg ilvl: %.1f (%.1f)|r", data.avgItemLvlEquip, data.avgItemLvl)
     )
 
     -- Update all slot rows
