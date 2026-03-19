@@ -56,7 +56,7 @@ local function SaveGear()
         end
 
         -- If we found an uncached item and haven't exceeded retry limit, try again from that index
-        -- Each item have 10 attempts to load
+        -- Each item has 10 attempts to load
         if firstUncachedIndex ~= startIndex then
             retryCount = 0;
         end
@@ -67,7 +67,7 @@ local function SaveGear()
             return
         elseif firstUncachedIndex then 
             --print an error message for any items that don't load after 10 attempts
-            print(string.format("TooManyAlts WARNING: Failed to cache item ID %d in the '%s' slot after 10 attempts, skipping", itemsToLoad[firstUncachedIndex].itemID, itemsToLoad[firstUncachedIndex].slotName))
+            print(string.format("TooManyAlts WARNING: Failed to cache item ID %d slot after 10 attempts, skipping", itemsToLoad[firstUncachedIndex].itemID))
             -- Check if there are more items to process
             if firstUncachedIndex < #itemsToLoad then
                 C_Timer.After(0.1, function() AttemptSave(firstUncachedIndex + 1, 0) end)
@@ -77,19 +77,11 @@ local function SaveGear()
         end
 
         -- Now save the gear with all data loaded (or after timeout)
-        local totalIlvl = 0
         local gear = {}
 
         for _, slot in ipairs(TooManyAlts_env.SLOTS) do
             local itemLink = GetInventoryItemLink("player", slot.id)
             local ilvl = nil
-
-            if itemLink then
-                ilvl = C_Item.GetDetailedItemLevelInfo(itemLink)
-                if ilvl then -- if item failed to load, we add nothing
-                    totalIlvl = totalIlvl + ilvl
-                end
-            end
 
             gear[slot.id] = {
                 name = slot.name,
@@ -117,37 +109,57 @@ local function SaveGear()
     AttemptSave(1, 0)
 end
 
-local function PreCacheAllGear()
-    if not TooManyAltsDB.characters then return end
-    for charKey, data in pairs(TooManyAltsDB.characters) do
-        if data.gear then
-            for _, slot in ipairs(TooManyAlts_env.SLOTS) do
-                local slotData = data.gear[slot.id]
-                if slotData and slotData.link then
-                    C_Item.GetItemInfo(slotData.link)
-                end
-            end
-        end
+--Save Character M+ Stats
+
+-- If we save multiple pieces of gear within .5 seconds of eachother, we wait to call SaveGear until after .5 seconds pass since we changed an item
+local saveTimer = nil
+local function ScheduleSaveGear()
+    if saveTimer then
+        saveTimer:Cancel()
     end
+    saveTimer = C_Timer.NewTimer(0.5, function()
+        saveTimer = nil
+        local ok, err = pcall(SaveGear)
+        if not ok then
+            print("TooManyAlts ERROR: " .. tostring(err))
+        end
+    end)
 end
 
-local function Init() 
+local function Init()
     -- Initialize DBs
     TooManyAltsDB = TooManyAltsDB or {}
     TooManyAltsDB.characters = TooManyAltsDB.characters or {} --Stores character info
     TooManyAltsDB.minimap = TooManyAltsDB.minimap or {} --Stores position of minimap button
-    PreCacheAllGear()
     TooManyAlts_env.InitMinimap()
 end
 
-local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("PLAYER_LOGIN")
-eventFrame:SetScript("OnEvent", function(self, event)
-    -- Initalize
-    Init()
+local updateFrame = CreateFrame("Frame")
+updateFrame:RegisterEvent("PLAYER_LOGIN")
+updateFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+updateFrame:SetScript("OnEvent", function(self, event, slot)
+    -- Update gear on login or when equipment changes
+    if event == "PLAYER_LOGIN" then
+        local ok, err = pcall(SaveGear)
+        if not ok then
+            print("TooManyAlts ERROR: " .. tostring(err))
+        end
+    end
 
-    local ok, err = pcall(SaveGear)
-    if not ok then
-        print("TooManyAlts ERROR: " .. tostring(err))
+    -- We save all gear when any piece of gear is changed, this saves us from having multiple instances of SaveGear running when we update multiple pieces at a time
+    -- Normal use case includes swapping 1 or 2 items (trinkets/rings), or many pieces with a gear swap addon.
+    if event == "PLAYER_EQUIPMENT_CHANGED" then
+        ScheduleSaveGear()
+    end
+    
+end)
+
+-- Initalize addon when savedVariables is ready
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("ADDON_LOADED")
+initFrame:SetScript("OnEvent", function(self, event, addonName)
+    if addonName == AddonName then
+       Init()
+       self:UnregisterEvent("ADDON_LOADED")
     end
 end)
