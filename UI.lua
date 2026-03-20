@@ -69,12 +69,7 @@ local function UpdateSlotRow(row, slotData)
     local slotID = row.slotID
 
     if slotData and slotData.link then
-        local _, _, _, _, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(slotData.link)
-        if itemTexture then
-            row.icon:SetTexture(itemTexture)
-        else
-            row.icon:SetTexture(EMPTY_SLOT_TEXTURES[slotID])
-        end
+        row.icon:SetTexture(slotData.itemTexture)
 
         row.iconBtn:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
