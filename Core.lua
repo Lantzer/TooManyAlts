@@ -179,8 +179,7 @@ updateFrame:SetScript("OnEvent", function(self, event, slot)
         end
     end
 
-    -- We save all gear when any piece of gear is changed, this saves us from having multiple instances of SaveGear running when we update multiple pieces at a time
-    -- Normal use case includes swapping 1 or 2 items (trinkets/rings), or many pieces with a gear swap addon.
+    -- When an item is changed, save it's slotID, and only change those that are changed
     if event == "PLAYER_EQUIPMENT_CHANGED" then
         changedSlots[slot] = true
         ScheduleSaveGear()
