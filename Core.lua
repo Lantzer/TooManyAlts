@@ -73,9 +73,9 @@ local function SaveGear(slotsToSave)
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
                 results[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl }
                 pending = pending - 1
-                if pending == 0 then WriteToDatabase(results) end
+                if pending == 0 then WriteToDatabase(results) end --inside callback function because of async, so that it is only triggered when the last item is done loading.
             end)
-        else
+        else -- if no item is equipped
             results[slotID] = { link = nil, itemTexture = nil, ilvl = nil }
         end
     end
@@ -86,6 +86,8 @@ local function SaveGear(slotsToSave)
         for slotID = 1, 17 do processSlot(slotID) end
     end
 
+    -- if we unequip only, then no async function is called, update empty slot in db
+    -- check pending to not allow the writeToDatabase during async calls
     if pending == 0 then WriteToDatabase(results) end
 end
 
