@@ -35,12 +35,12 @@ local function SaveGear(slotsToSave)
         return
     end
 
-    local function WriteToDatabase(results)
+    local function WriteToDatabase(gear)
         local avgItemLvl, avgILvlEquip = GetAverageItemLevel()
 
         if slotsToSave then
             local charData = TooManyAltsDB.characters[charKey]
-            for slotID, slotData in pairs(results) do
+            for slotID, slotData in pairs(gear) do
                 charData.gear[slotID] = slotData
             end
             charData.level = UnitLevel("player")
@@ -54,7 +54,7 @@ local function SaveGear(slotsToSave)
                 class = select(2, UnitClass("player")),
                 avgItemLvl = avgItemLvl or 0,
                 avgItemLvlEquip = avgILvlEquip or 0,
-                gear = results,
+                gear = gear,
             }
         end
 
@@ -62,13 +62,13 @@ local function SaveGear(slotsToSave)
     end
 
     local pending = 0
-    local results = {}
+    local gear = {}
     local loopDone = false
 
     -- Only write once all slots are registered AND all async loads are complete
     local function tryWrite()
         if loopDone and pending == 0 then
-            WriteToDatabase(results)
+            WriteToDatabase(gear)
         end
     end
 
@@ -79,12 +79,12 @@ local function SaveGear(slotsToSave)
             local item = Item:CreateFromItemLink(itemLink)
             item:ContinueOnItemLoad(function()
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
-                results[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl }
+                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl }
                 pending = pending - 1
                 tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
             end)
         else -- if no item is equipped
-            results[slotID] = { link = nil, itemTexture = nil, ilvl = nil }
+            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil }
         end
     end
 
