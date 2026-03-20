@@ -63,6 +63,14 @@ local function SaveGear(slotsToSave)
 
     local pending = 0
     local results = {}
+    local loopDone = false
+
+    -- Only write once all slots are registered AND all async loads are complete
+    local function tryWrite()
+        if loopDone and pending == 0 then
+            WriteToDatabase(results)
+        end
+    end
 
     local function processSlot(slotID)
         local itemLink = GetInventoryItemLink("player", slotID)
@@ -73,7 +81,7 @@ local function SaveGear(slotsToSave)
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
                 results[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl }
                 pending = pending - 1
-                if pending == 0 then WriteToDatabase(results) end --inside callback function because of async, so that it is only triggered when the last item is done loading.
+                tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
             end)
         else -- if no item is equipped
             results[slotID] = { link = nil, itemTexture = nil, ilvl = nil }
@@ -86,9 +94,8 @@ local function SaveGear(slotsToSave)
         for slotID = 1, 17 do processSlot(slotID) end
     end
 
-    -- if we unequip only, then no async function is called, update empty slot in db
-    -- check pending to not allow the writeToDatabase during async calls
-    if pending == 0 then WriteToDatabase(results) end
+    loopDone = true
+    tryWrite() -- if we unequip only, then no async function is called, update empty slot in db
 end
 
 --Save Character M+ Stats
