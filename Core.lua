@@ -23,93 +23,84 @@ TooManyAlts_env.SLOTS = {
     { id = 17, name = "Off Hand" },
 }
 
-local function SaveGear()
+-- slotsToSave: nil = full save (login), table of slotID→true = partial save (equipment change)
+local function SaveGear(slotsToSave)
     local name = UnitName("player")
     local realm = GetRealmName()
     local charKey = name .. "-" .. realm
 
-    -- First pass: collect item links and request data for any items not cached
-    local itemsToLoad = {}
-    for _, slot in ipairs(TooManyAlts_env.SLOTS) do
-        local itemLink = GetInventoryItemLink("player", slot.id)
-        if itemLink then
-            local itemID = C_Item.GetItemInfoInstant(itemLink)
-            if itemID and not C_Item.IsItemDataCachedByID(itemID) then
-                C_Item.RequestLoadItemDataByID(itemID)
-                table.insert(itemsToLoad, {itemID = itemID, slotName = slot.name})
-            end
-        end
+    -- Partial save with no existing record: fall back to full save
+    if slotsToSave and not TooManyAltsDB.characters[charKey] then
+        SaveGear(nil)
+        return
     end
 
-    -- If items need loading, wait for them with retries
-    local function AttemptSave(startIndex, retryCount)
-        retryCount = retryCount or 0
-        startIndex = startIndex or 1
-
-        -- Check remaining items starting from startIndex
-        local firstUncachedIndex = nil
-        for i = startIndex, #itemsToLoad do
-            if not C_Item.IsItemDataCachedByID(itemsToLoad[i].itemID) then
-                firstUncachedIndex = i
-                break
-            end
-        end
-
-        -- If we found an uncached item and haven't exceeded retry limit, try again from that index
-        -- Each item has 10 attempts to load
-        if firstUncachedIndex ~= startIndex then
-            retryCount = 0;
-        end
-
-        -- if an item is not cached after 10 attempts, print an error and move to next item
-        if firstUncachedIndex and retryCount < 10 then
-            C_Timer.After(0.1, function() AttemptSave(firstUncachedIndex, retryCount + 1) end)
-            return
-        elseif firstUncachedIndex then 
-            --print an error message for any items that don't load after 10 attempts
-            print(string.format("TooManyAlts WARNING: Failed to cache item ID %d slot after 10 attempts, skipping", itemsToLoad[firstUncachedIndex].itemID))
-            -- Check if there are more items to process
-            if firstUncachedIndex < #itemsToLoad then
-                C_Timer.After(0.1, function() AttemptSave(firstUncachedIndex + 1, 0) end)
-                return
-            end
-            -- If no more items, fall through to save
-        end
-
-        -- Now save the gear with all data loaded (or after timeout)
-        local gear = {}
-
-        for _, slot in ipairs(TooManyAlts_env.SLOTS) do
-            local itemLink = GetInventoryItemLink("player", slot.id)
-            local ilvl = nil
-
-            gear[slot.id] = {
-                name = slot.name,
-                link = itemLink,
-                ilvl = ilvl,
-            }
-        end
-
+    local function WriteToDatabase(gear)
         local avgItemLvl, avgILvlEquip = GetAverageItemLevel()
 
-        TooManyAltsDB.characters[charKey] = {
-            name = name,
-            realm = realm,
-            level = UnitLevel("player"),
-            class = select(2, UnitClass("player")),
-            avgItemLvl = avgItemLvl or 0,
-            avgItemLvlEquip = avgILvlEquip or 0,
-            gear = gear,
-        }
+        if slotsToSave then
+            local charData = TooManyAltsDB.characters[charKey]
+            for slotID, slotData in pairs(gear) do
+                charData.gear[slotID] = slotData
+            end
+            charData.level = UnitLevel("player")
+            charData.avgItemLvl = avgItemLvl or 0
+            charData.avgItemLvlEquip = avgILvlEquip or 0
+        else
+            TooManyAltsDB.characters[charKey] = {
+                name = name,
+                realm = realm,
+                level = UnitLevel("player"),
+                class = select(2, UnitClass("player")),
+                avgItemLvl = avgItemLvl or 0,
+                avgItemLvlEquip = avgILvlEquip or 0,
+                gear = gear,
+            }
+        end
 
         print("TooManyAlts: Gear saved for " .. charKey)
     end
 
-    -- Start the save attempt from index 1
-    AttemptSave(1, 0)
+    local pending = 0
+    local gear = {}
+    local loopDone = false
+
+    -- Only write once all slots are registered AND all async loads are complete
+    local function tryWrite()
+        if loopDone and pending == 0 then
+            WriteToDatabase(gear)
+        end
+    end
+
+    local function processSlot(slotID)
+        local itemLink = GetInventoryItemLink("player", slotID)
+        if itemLink then
+            pending = pending + 1
+            local item = Item:CreateFromItemLink(itemLink)
+            item:ContinueOnItemLoad(function()
+                local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
+                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl }
+                pending = pending - 1
+                tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
+            end)
+        else -- if no item is equipped
+            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil }
+        end
+    end
+
+    if slotsToSave then
+        for slotID in pairs(slotsToSave) do processSlot(slotID) end
+    else
+        for slotID = 1, 17 do processSlot(slotID) end
+    end
+
+    loopDone = true
+    tryWrite() -- if we unequip only, then no async function is called, update empty slot in db
 end
 
 --Save Character M+ Stats
+
+local changedSlots = {}  -- slotID → true, accumulates changed slots until debounce fires
 
 -- If we save multiple pieces of gear within .5 seconds of eachother, we wait to call SaveGear until after .5 seconds pass since we changed an item
 local saveTimer = nil
@@ -119,7 +110,9 @@ local function ScheduleSaveGear()
     end
     saveTimer = C_Timer.NewTimer(0.5, function()
         saveTimer = nil
-        local ok, err = pcall(SaveGear)
+        local snapshot = changedSlots
+        changedSlots = {}
+        local ok, err = pcall(SaveGear, snapshot)
         if not ok then
             print("TooManyAlts ERROR: " .. tostring(err))
         end
@@ -146,9 +139,9 @@ updateFrame:SetScript("OnEvent", function(self, event, slot)
         end
     end
 
-    -- We save all gear when any piece of gear is changed, this saves us from having multiple instances of SaveGear running when we update multiple pieces at a time
-    -- Normal use case includes swapping 1 or 2 items (trinkets/rings), or many pieces with a gear swap addon.
+    -- When an item is changed, save it's slotID, and only change those that are changed
     if event == "PLAYER_EQUIPMENT_CHANGED" then
+        changedSlots[slot] = true
         ScheduleSaveGear()
     end
     
