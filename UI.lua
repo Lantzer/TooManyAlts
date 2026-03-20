@@ -240,6 +240,7 @@ local function CreateMainFrame()
 end
 
 TooManyAlts_env.mainFrame = CreateMainFrame()
+tinsert(UISpecialFrames, "TooManyAltsFrame")
 
 TooManyAlts_env.OpenMainFrame = function()
     PopulateTabs()

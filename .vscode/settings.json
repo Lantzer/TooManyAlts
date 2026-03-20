@@ -6,6 +6,7 @@
         "AddonCompartmentFrame",
         "SuperTrackedFrame",
         "class",
-        "toString"
+        "toString",
+        "UISpecialFrames"
     ]
 }
