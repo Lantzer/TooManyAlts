@@ -23,6 +23,25 @@ TooManyAlts_env.SLOTS = {
     { id = 17, name = "Off Hand" },
 }
 
+local scanTip = CreateFrame("GameTooltip", "TooManyAltsScanTip", nil, "GameTooltipTemplate")
+scanTip:SetOwner(WorldFrame, "ANCHOR_NONE")
+
+local function GetItemUpgradeTrack(itemLink)
+    if not itemLink then return nil end
+    scanTip:ClearLines()
+    scanTip:SetHyperlink(itemLink)
+    for i = 3, 4 do
+        local text = _G["TooManyAltsScanTipTextLeft" .. i]:GetText()
+        if text then
+            local track, cur, max = text:match("Upgrade Level: (%a+)%s+(%d+)/(%d+)")
+            if track then
+                return track, tonumber(cur), tonumber(max)
+            end
+        end
+    end
+    return nil
+end
+
 -- slotsToSave: nil = full save (login), table of slotID→true = partial save (equipment change)
 local function SaveGear(slotsToSave)
     local name = UnitName("player")
@@ -79,12 +98,13 @@ local function SaveGear(slotsToSave)
             local item = Item:CreateFromItemLink(itemLink)
             item:ContinueOnItemLoad(function()
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
-                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl }
+                local track, cur, max = GetItemUpgradeTrack(itemLink)
+                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl, upgradeTrack = track, upgradeCur = cur, upgradeMax = max }
                 pending = pending - 1
                 tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
             end)
         else -- if no item is equipped
-            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil }
+            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil, upgradeTrack = nil, upgradeCur = nil, upgradeMax = nil }
         end
     end
 

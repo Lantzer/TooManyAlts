@@ -48,10 +48,10 @@ local function CreateSlotRow(parent, slotID, xOffset, yOffset)
     ilvlText:SetWidth(30)
     ilvlText:SetJustifyH("LEFT")
 
-    local itemText = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemText:SetPoint("LEFT", ilvlText, "RIGHT", 4, 0)
-    itemText:SetWidth(120)
-    itemText:SetJustifyH("LEFT")
+    local upgradeText = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    upgradeText:SetPoint("LEFT", ilvlText, "RIGHT", 4, 0)
+    upgradeText:SetWidth(120)
+    upgradeText:SetJustifyH("LEFT")
 
     -- Store references so we can update them later
     return {
@@ -59,7 +59,7 @@ local function CreateSlotRow(parent, slotID, xOffset, yOffset)
         iconBtn   = iconBtn,
         icon      = icon,
         ilvlText  = ilvlText,
-        itemText  = itemText,
+        upgradeText = upgradeText,
         slotID    = slotID,
     }
 end
@@ -69,8 +69,11 @@ local function UpdateSlotRow(row, slotData)
     local slotID = row.slotID
 
     if slotData and slotData.link then
+        
+        -- texture
         row.icon:SetTexture(slotData.itemTexture)
 
+        -- display item tooltip
         row.iconBtn:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetHyperlink(slotData.link)
@@ -80,19 +83,25 @@ local function UpdateSlotRow(row, slotData)
             GameTooltip:Hide()
         end)
 
+        -- ilvl text
         if slotData.ilvl then
             row.ilvlText:SetText("|cffffcc00" .. slotData.ilvl .. "|r")
         else
             row.ilvlText:SetText("|cff888888--|r")
         end
 
-        row.itemText:SetText(slotData.link)
+        -- item upgrade info
+        if slotData.upgradeTrack then
+            row.upgradeText:SetText("|cffffcc00" .. slotData.upgradeTrack .. " " .. slotData.upgradeCur .. "/" .. slotData.upgradeMax .. "|r")
+        else
+            row.upgradeText:SetText("|cff888888--|r")
+        end
     else
         row.icon:SetTexture(EMPTY_SLOT_TEXTURES[slotID])
         row.iconBtn:SetScript("OnEnter", nil)
         row.iconBtn:SetScript("OnLeave", nil)
-        row.ilvlText:SetText("|cff888888--|r")
-        row.itemText:SetText("|cff888888empty|r")
+        -- row.ilvlText:SetText("|cff888888--|r")
+        -- row.upgradeText:SetText("|cff888888empty|r")
     end
 end
 
