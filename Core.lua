@@ -5,42 +5,25 @@ local AddonName, TooManyAlts_env = ...
 TooManyAlts_env.MAX_LEVEL = 90
 
 TooManyAlts_env.SLOTS = {
-    { id = 1,  name = "Head" },
-    { id = 2,  name = "Neck" },
-    { id = 3,  name = "Shoulder" },
-    { id = 5,  name = "Chest" },
-    { id = 6,  name = "Waist" },
-    { id = 7,  name = "Legs" },
-    { id = 8,  name = "Feet" },
-    { id = 9,  name = "Wrist" },
-    { id = 10, name = "Hands" },
-    { id = 11, name = "Ring 1" },
-    { id = 12, name = "Ring 2" },
-    { id = 13, name = "Trinket 1" },
-    { id = 14, name = "Trinket 2" },
-    { id = 15, name = "Back" },
-    { id = 16, name = "Main Hand" },
-    { id = 17, name = "Off Hand" },
+    { id = 1,  name = "Head", enchantable = true},
+    { id = 2,  name = "Neck", enchantable = false},
+    { id = 3,  name = "Shoulder", enchantable = true},
+    { id = 5,  name = "Chest", enchantable = true },
+    { id = 6,  name = "Waist", enchantable = false},
+    { id = 7,  name = "Legs", enchantable = true },
+    { id = 8,  name = "Feet", enchantable = true },
+    { id = 9,  name = "Wrist", enchantable = false},
+    { id = 10, name = "Hands", enchantable = false },
+    { id = 11, name = "Ring 1", enchantable = true },
+    { id = 12, name = "Ring 2", enchantable = true },
+    { id = 13, name = "Trinket 1", enchantable = false },
+    { id = 14, name = "Trinket 2", enchantable = false },
+    { id = 15, name = "Back", enchantable = false },
+    { id = 16, name = "Main Hand", enchantable = true },
+    { id = 17, name = "Off Hand", enchantable = false },
 }
 
-local scanTip = CreateFrame("GameTooltip", "TooManyAltsScanTip", nil, "GameTooltipTemplate")
-scanTip:SetOwner(WorldFrame, "ANCHOR_NONE")
 
-local function GetItemUpgradeTrack(itemLink)
-    if not itemLink then return nil end
-    scanTip:ClearLines()
-    scanTip:SetHyperlink(itemLink)
-    for i = 3, 4 do
-        local text = _G["TooManyAltsScanTipTextLeft" .. i]:GetText()
-        if text then
-            local track, cur, max = text:match("Upgrade Level: (%a+)%s+(%d+)/(%d+)")
-            if track then
-                return track, tonumber(cur), tonumber(max)
-            end
-        end
-    end
-    return nil
-end
 
 -- slotsToSave: nil = full save (login), table of slotID→true = partial save (equipment change)
 local function SaveGear(slotsToSave)
@@ -98,7 +81,7 @@ local function SaveGear(slotsToSave)
             local item = Item:CreateFromItemLink(itemLink)
             item:ContinueOnItemLoad(function()
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
-                local track, cur, max = GetItemUpgradeTrack(itemLink)
+                local track, cur, max = TooManyAlts_env.GetItemUpgradeTrack(itemLink)
                 gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl, upgradeTrack = track, upgradeCur = cur, upgradeMax = max }
                 pending = pending - 1
                 tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.

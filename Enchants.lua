@@ -1,0 +1,3 @@
+-- Enchants.lua
+-- Handles determining if items are missing enchants
+local AddonName, TooManyAlts_env = ...
