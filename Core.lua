@@ -83,7 +83,7 @@ local function SaveGear(slotsToSave)
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
                 local track, cur, max = TooManyAlts_env.GetItemUpgradeTrack(itemLink)
                 local numSockets, gemLinks = TooManyAlts_env.GetGemInfo(itemLink)
-                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl, upgradeTrack = track, upgradeCur = cur, upgradeMax = max }
+                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl, upgradeTrack = track, upgradeCur = cur, upgradeMax = max, numSockets = numSockets, gemLinks = gemLinks}
                 pending = pending - 1
                 tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
             end)
