@@ -11,7 +11,7 @@ function TooManyAlts_env.GetItemUpgradeTrack(itemLink)
     TooManyAlts_env.tooltipScan:ClearLines()
     TooManyAlts_env.tooltipScan:SetHyperlink(itemLink)
     for i = 3, 4 do
-        local text = _G["TooManyAltsScanTipTextLeft" .. i]:GetText()
+        local text = _G["TooManyAltsTooltipScanTextLeft" .. i]:GetText()
         if text then
             local track, cur, max = text:match("Upgrade Level: (%a+)%s+(%d+)/(%d+)")
             if track then
