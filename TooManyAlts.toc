@@ -6,9 +6,7 @@
 ## SavedVariables: TooManyAltsDB
 
 libs/load_libs.xml
-UpgradeTrack.lua
-Gems.lua
-Enchants.lua
+InspectItem.lua
 Core.lua
 UI.lua
 Minimap.lua
