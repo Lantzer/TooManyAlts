@@ -153,7 +153,7 @@ local function UpdateSlotRow(row, slotData)
             end
         end
             
-    else
+    else -- no item
         row.icon:SetTexture(EMPTY_SLOT_TEXTURES[slotID])
         row.iconBtn:SetScript("OnEnter", nil)
         row.iconBtn:SetScript("OnLeave", nil)
