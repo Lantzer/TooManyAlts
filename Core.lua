@@ -88,7 +88,7 @@ local function SaveGear(slotsToSave)
                 tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
             end)
         else -- if no item is equipped
-            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil, upgradeTrack = nil, upgradeCur = nil, upgradeMax = nil }
+            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil, upgradeTrack = nil, upgradeCur = nil, upgradeMax = nil, numSockets = nil, gemLinks = nil}
         end
     end
 
@@ -146,6 +146,10 @@ updateFrame:SetScript("OnEvent", function(self, event, slot)
     -- When an item is changed, save it's slotID, and only change those that are changed
     if event == "PLAYER_EQUIPMENT_CHANGED" then
         changedSlots[slot] = true
+        if slot == 16 or slot == 17 then
+            changedSlots[16] = true
+            changedSlots[17] = true
+        end
         ScheduleSaveGear()
     end
     
