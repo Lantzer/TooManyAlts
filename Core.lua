@@ -78,11 +78,25 @@ local function SaveGear(slotsToSave)
         local itemLink = GetInventoryItemLink("player", slotID)
         if itemLink then
             pending = pending + 1
-            local item = Item:CreateFromItemLink(itemLink)
+            local item = Item:CreateFromItemLink(itemLink) -- Ensures item is in cache so that below functions don't return nil during async calls.
             item:ContinueOnItemLoad(function()
                 local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
                 local track, cur, max = TooManyAlts_env.GetItemUpgradeTrack(itemLink)
-                local numSockets, gemLinks = TooManyAlts_env.GetGemInfo(itemLink)
+                local numSockets = TooManyAlts_env.getSocketCount(itemLink)
+                local gemLinks = {}
+                local gemIDs = TooManyAlts_env.getGemIDs(itemLink)
+                for i = 1, numSockets do
+                    local gemID = tonumber(gemIDs[i])
+                    if gemID then
+                        pending = pending + 1
+                        local gemItem = Item:CreateFromItemID(gemID)
+                        gemItem:ContinueOnItemLoad(function()
+                            gemLinks[#gemLinks + 1] = gemItem:GetItemLink()
+                            pending = pending - 1
+                            tryWrite()
+                        end)
+                    end
+                end
                 gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl, upgradeTrack = track, upgradeCur = cur, upgradeMax = max, numSockets = numSockets, gemLinks = gemLinks}
                 pending = pending - 1
                 tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.

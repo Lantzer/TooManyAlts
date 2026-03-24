@@ -22,12 +22,10 @@ function TooManyAlts_env.GetItemUpgradeTrack(itemLink)
     return nil
 end
 
--- Returns number of sockets in the item, and any gems in that item.
--- If numSockets > #gemLinks, there are |numSockets - #gemLinks| unsocketed gems
-function TooManyAlts_env.GetGemInfo(itemLink)
+-- Assumes itemLink is already cached.
+function TooManyAlts_env.getSocketCount(itemLink)
     if not itemLink then return nil end
     local numSockets = 0
-    local gemLinks = {}
     local itemInfo = C_Item.GetItemStats(itemLink)  -- ContinueOnItemLoad? We will  always call this after the itemLink is loaded already.
     if itemInfo then    --Counts number of sockets on an item
         for infoLine in pairs(itemInfo) do
@@ -36,14 +34,19 @@ function TooManyAlts_env.GetGemInfo(itemLink)
             end
         end
     end
-    -- Get gemLinks for # of gems in item
-    if numSockets > 0 then
-        for i = 1, numSockets do
-            local gemName, curGem = C_Item.GetItemGem(itemLink, i) -- ContinueOnItemLoad here?
-            if curGem then
-                gemLinks[#gemLinks+1] = curGem
-            end
-        end
+    return numSockets
+end
+
+-- Assumes itemLink is already cached.
+-- Parses gem IDs from positions 3-6 of the item data payload:
+-- itemID : enchantID : gemID1 : gemID2 : gemID3 : gemID4 : ...
+-- *API Note: gemID4 is unused* https://wowpedia.fandom.com/wiki/ItemLink#Gem_IDs
+function TooManyAlts_env.getGemIDs(itemLink)
+    local itemData = itemLink:match("|Hitem:([^|]+)|h")
+    if not itemData then return {} end
+    local parts = {}
+    for part in (itemData .. ":"):gmatch("([^:]*):") do
+        parts[#parts + 1] = part
     end
-    return numSockets, gemLinks
+    return { parts[3], parts[4], parts[5], parts[6] }
 end
