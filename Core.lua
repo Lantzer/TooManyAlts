@@ -25,103 +25,11 @@ TooManyAlts_env.SLOTS = {
 
 
 
--- slotsToSave: nil = full save (login), table of slotID→true = partial save (equipment change)
-local function SaveGear(slotsToSave)
-    local name = UnitName("player")
-    local realm = GetRealmName()
-    local charKey = name .. "-" .. realm
 
-    -- Partial save with no existing record: fall back to full save
-    if slotsToSave and not TooManyAltsDB.characters[charKey] then
-        SaveGear(nil)
-        return
-    end
-
-    local function WriteToDatabase(gear)
-        local avgItemLvl, avgILvlEquip = GetAverageItemLevel()
-
-        if slotsToSave then
-            local charData = TooManyAltsDB.characters[charKey]
-            for slotID, slotData in pairs(gear) do
-                charData.gear[slotID] = slotData
-            end
-            charData.level = UnitLevel("player")
-            charData.avgItemLvl = avgItemLvl or 0
-            charData.avgItemLvlEquip = avgILvlEquip or 0
-        else
-            TooManyAltsDB.characters[charKey] = {
-                name = name,
-                realm = realm,
-                level = UnitLevel("player"),
-                class = select(2, UnitClass("player")),
-                avgItemLvl = avgItemLvl or 0,
-                avgItemLvlEquip = avgILvlEquip or 0,
-                gear = gear,
-            }
-        end
-
-        print("TooManyAlts: Gear saved for " .. charKey)
-    end
-
-    local pending = 0
-    local gear = {}
-    local loopDone = false
-
-    -- Only write once all slots are registered AND all async loads are complete
-    local function tryWrite()
-        if loopDone and pending == 0 then
-            WriteToDatabase(gear)
-        end
-    end
-
-    local function processSlot(slotID)
-        local itemLink = GetInventoryItemLink("player", slotID)
-        if itemLink then
-            pending = pending + 1
-            local item = Item:CreateFromItemLink(itemLink)
-            item:ContinueOnItemLoad(function()
-                local _, _, _, ilvl, _, _, _, _, _, itemTexture = C_Item.GetItemInfo(itemLink)
-                local track, cur, max = TooManyAlts_env.GetItemUpgradeTrack(itemLink)
-                local numSockets, gemLinks = TooManyAlts_env.GetGemInfo(itemLink)
-                gear[slotID] = { link = itemLink, itemTexture = itemTexture, ilvl = ilvl, upgradeTrack = track, upgradeCur = cur, upgradeMax = max, numSockets = numSockets, gemLinks = gemLinks}
-                pending = pending - 1
-                tryWrite() --inside callback function because of async, so that it is only triggered when the last item is done loading.
-            end)
-        else -- if no item is equipped
-            gear[slotID] = { link = nil, itemTexture = nil, ilvl = nil, upgradeTrack = nil, upgradeCur = nil, upgradeMax = nil, numSockets = nil, gemLinks = nil}
-        end
-    end
-
-    if slotsToSave then
-        for slotID in pairs(slotsToSave) do processSlot(slotID) end
-    else
-        for slotID = 1, 17 do processSlot(slotID) end
-    end
-
-    loopDone = true
-    tryWrite() -- if we unequip only, then no async function is called, update empty slot in db
-end
 
 --Save Character M+ Stats
 
-local changedSlots = {}  -- slotID → true, accumulates changed slots until debounce fires
 
--- If we save multiple pieces of gear within .5 seconds of eachother, we wait to call SaveGear until after .5 seconds pass since we changed an item
-local saveTimer = nil
-local function ScheduleSaveGear()
-    if saveTimer then
-        saveTimer:Cancel()
-    end
-    saveTimer = C_Timer.NewTimer(0.5, function()
-        saveTimer = nil
-        local snapshot = changedSlots
-        changedSlots = {}
-        local ok, err = pcall(SaveGear, snapshot)
-        if not ok then
-            print("TooManyAlts ERROR: " .. tostring(err))
-        end
-    end)
-end
 
 local function Init()
     -- Initialize DBs
@@ -131,13 +39,15 @@ local function Init()
     TooManyAlts_env.InitMinimap()
 end
 
+
+local changedSlots = {}  -- slotID → true, accumulates changed slots until debounce fires
 local updateFrame = CreateFrame("Frame")
 updateFrame:RegisterEvent("PLAYER_LOGIN")
 updateFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 updateFrame:SetScript("OnEvent", function(self, event, slot)
     -- Update gear on login or when equipment changes
     if event == "PLAYER_LOGIN" then
-        local ok, err = pcall(SaveGear)
+        local ok, err = pcall(TooManyAlts_env.saveGear)
         if not ok then
             print("TooManyAlts ERROR: " .. tostring(err))
         end
@@ -150,7 +60,7 @@ updateFrame:SetScript("OnEvent", function(self, event, slot)
             changedSlots[16] = true
             changedSlots[17] = true
         end
-        ScheduleSaveGear()
+        TooManyAlts_env.scheduleSaveGear(changedSlots)
     end
     
 end)

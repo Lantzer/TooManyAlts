@@ -79,6 +79,7 @@ local function CreateSlotRow(parent, slotID, xOffset, yOffset)
     }
 end
 
+-- Each item frame has hidden gem icons, we show as many as the items has sockets. We fill in any sockets with the items gem links
 local function ResetGemIcon(gemIcon)
     gemIcon.tex:SetTexture("Interface\\ItemSocketingFrame\\UI-EmptySocket-Prismatic")
     gemIcon:EnableMouse(false)
