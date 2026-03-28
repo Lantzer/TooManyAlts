@@ -6,7 +6,7 @@
 ## SavedVariables: TooManyAltsDB
 
 libs/load_libs.xml
-InspectItem.lua
+characterGear.lua
 Core.lua
 UI.lua
 Minimap.lua
