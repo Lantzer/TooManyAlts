@@ -27,50 +27,40 @@ TooManyAlts_env.SLOTS = {
 
 
 
---Save Character M+ Stats
-
-
+local changedSlots = {}  -- slotID → true, accumulates changed slots until debounce fires
+local eventFrame = CreateFrame("Frame")
 
 local function Init()
-    -- Initialize DBs
+    eventFrame:UnregisterEvent("ADDON_LOADED")
     TooManyAltsDB = TooManyAltsDB or {}
     TooManyAltsDB.characters = TooManyAltsDB.characters or {} --Stores character info
     TooManyAltsDB.minimap = TooManyAltsDB.minimap or {} --Stores position of minimap button
     TooManyAlts_env.InitMinimap()
 end
 
-
-local changedSlots = {}  -- slotID → true, accumulates changed slots until debounce fires
-local updateFrame = CreateFrame("Frame")
-updateFrame:RegisterEvent("PLAYER_LOGIN")
-updateFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-updateFrame:SetScript("OnEvent", function(self, event, slot)
-    -- Update gear on login or when equipment changes
-    if event == "PLAYER_LOGIN" then
+local eventHandlers = {
+    ADDON_LOADED = function(addonName)
+        if addonName == AddonName then Init() end
+    end,
+    PLAYER_LOGIN = function()
         local ok, err = pcall(TooManyAlts_env.saveGear)
-        if not ok then
-            print("TooManyAlts ERROR: " .. tostring(err))
-        end
-    end
-
-    -- When an item is changed, save it's slotID, and only change those that are changed
-    if event == "PLAYER_EQUIPMENT_CHANGED" then
+        if not ok then print("TooManyAlts ERROR: " .. tostring(err)) end
+    end,
+    PLAYER_EQUIPMENT_CHANGED = function(slot)
         changedSlots[slot] = true
         if slot == 16 or slot == 17 then
             changedSlots[16] = true
             changedSlots[17] = true
         end
         TooManyAlts_env.scheduleSaveGear(changedSlots)
-    end
-    
-end)
+    end,
+}
 
--- Initalize addon when savedVariables is ready
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("ADDON_LOADED")
-initFrame:SetScript("OnEvent", function(self, event, addonName)
-    if addonName == AddonName then
-       Init()
-       self:UnregisterEvent("ADDON_LOADED")
+for event in pairs(eventHandlers) do
+    eventFrame:RegisterEvent(event)
+end
+eventFrame:SetScript("OnEvent", function(self, event, ...)
+    if eventHandlers[event] then
+        eventHandlers[event](...)
     end
 end)
