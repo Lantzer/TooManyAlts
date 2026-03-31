@@ -8,6 +8,7 @@
 libs/load_libs.xml
 characterGear.lua
 Core.lua
-UI.lua
+UI/UI.lua
+UI/UI_Characters.lua
 Minimap.lua
 TooManyAlts.lua
