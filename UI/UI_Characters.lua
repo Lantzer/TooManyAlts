@@ -186,9 +186,7 @@ end
 -- ---------------------------------------------------------------------------
 
 TooManyAlts_env.RegisterTab("characters", "Characters", function(parent)
-    local f = CreateFrame("Frame", nil, parent)
-
-    local layout = TooManyAlts_env.CreateSideCharacterTabLayout(f, function(rightPanel)
+    local layout = TooManyAlts_env.CreateSideCharacterTabLayout(parent, function(rightPanel) -- this function is BuildContent from CreateSideCharacterTabLayout
         -- Build the gear view into rightPanel once, then return onSelect
 
         local charHeader = rightPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -226,6 +224,6 @@ TooManyAlts_env.RegisterTab("characters", "Characters", function(parent)
         end
     end)
 
-    f:SetScript("OnShow", layout.populate)
-    return f
+    layout.frame:SetScript("OnShow", layout.populate)
+    return layout.frame
 end)

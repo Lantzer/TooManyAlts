@@ -144,10 +144,14 @@ function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent)
     local selectedChar = nil
     local onSelect     = nil  -- set after buildContent runs
 
+    -- Container frame so BuildTabSystem can anchor/show/hide without self-anchoring
+    local container = CreateFrame("Frame", nil, parent)
+    container:SetAllPoints(parent)
+
     -- Left panel: character list
-    local leftPanel = CreateFrame("Frame", nil, parent, "InsetFrameTemplate")
-    leftPanel:SetPoint("TOPLEFT",    parent, "TOPLEFT",    4, -4)
-    leftPanel:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 4,  4)
+    local leftPanel = CreateFrame("Frame", nil, container, "InsetFrameTemplate")
+    leftPanel:SetPoint("TOPLEFT",    container, "TOPLEFT",    4, -4)
+    leftPanel:SetPoint("BOTTOMLEFT", container, "BOTTOMLEFT", 4,  4)
     leftPanel:SetWidth(120)
 
     local charLabel = leftPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -156,9 +160,9 @@ function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent)
     charLabel:SetTextColor(1, 0.82, 0, 1)
 
     -- Right panel: owned entirely by the caller via buildContent
-    local rightPanel = CreateFrame("Frame", nil, parent, "InsetFrameTemplate")
-    rightPanel:SetPoint("TOPLEFT",     leftPanel, "TOPRIGHT",     4, 0)
-    rightPanel:SetPoint("BOTTOMRIGHT", parent,    "BOTTOMRIGHT", -4, 4)
+    local rightPanel = CreateFrame("Frame", nil, container, "InsetFrameTemplate")
+    rightPanel:SetPoint("TOPLEFT",     leftPanel,  "TOPRIGHT",     4, 0)
+    rightPanel:SetPoint("BOTTOMRIGHT", container,  "BOTTOMRIGHT", -4, 4)
 
     -- Hand the right panel to the caller; get back their onSelect handler
     onSelect = buildContent(rightPanel)
@@ -223,7 +227,7 @@ function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent)
         end
     end
 
-    return { populate = populate }
+    return { frame = container, populate = populate }
 end
 
 -- Returns the class color as a hex string
