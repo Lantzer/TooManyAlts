@@ -1,0 +1,11 @@
+-- UI_MythicPlus.lua
+-- Mythic+ Tab: display each characters M+ stats.
+local AddonName, TooManyAlts_env = ...
+
+-- Create UI Features
+    -- Create Character M+ row object
+        -- Create Current Key display object
+        -- Create this weeks GV progress object
+        -- Create object to season best for dungeon
+    -- Create drop down menu section
+--Register Tab
