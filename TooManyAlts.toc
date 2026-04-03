@@ -10,5 +10,6 @@ characterGear.lua
 Core.lua
 UI/UI.lua
 UI/UI_Characters.lua
+UI/UI_MythicPlus.lua
 Minimap.lua
 TooManyAlts.lua

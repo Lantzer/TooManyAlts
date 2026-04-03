@@ -23,7 +23,7 @@ TooManyAlts_env.SLOTS = {
     { id = 17, name = "Off Hand", enchantable = false },
 }
 
-
+-- Check current season, if it is different than what we already have saved, recalculate dungeon maps and the dungeon maps data
 
 
 
