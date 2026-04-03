@@ -48,8 +48,7 @@ local function CreateDungeonBox(parent, w, h, dungeonData)
     local bg = frame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     if dungeonData then
-        local _,_,_,texture,_ = C_ChallengeMode.GetMapUIInfo(dungeonData.mapId)
-        bg:SetTexture(texture or 134400) -- test
+        bg:SetTexture(dungeonData.texture or 134400) -- test
 
     end
 
@@ -111,10 +110,10 @@ local function CreateCharCard(parent)
     local dungeonBoxes = {}
     local xStart = RATE_BLOCK_W + KEY_W + 25  -- after name + keyBox + gvTxt gap
     local i = 0
-    for mapId, data pairs(dungeonData) do
+    for mapId, data in pairs(dungeonData) do
         local box = CreateDungeonBox(frame, DUNGEON_W, DUNGEON_H, data)
         box.frame:SetPoint("LEFT", frame, "LEFT", xStart + i * (DUNGEON_W + 4), 0)
-        dungeonBoxes[idx] = box
+        dungeonBoxes[mapId] = box
         i = i + 1
     end
 
@@ -157,10 +156,9 @@ local function UpdateCharCard(card, charKey, data)
 
     -- Season-best dungeon boxes in season order
     local mapTable = C_ChallengeMode.GetMapTable() or {}
-    for i = 1, NUM_DUNGEONS do
-        local box = card.dungeonBoxes[i]
-        local mapID = mapTable[i]
-        local best = mp and mapID and mp.seasonBests and mp.seasonBests[mapID]
+    for i = 1, #mapTable do
+        local box = card.dungeonBoxes[mapTable[i]]
+        local best = mp and mp.seasonBests and mp.seasonBests[i]
 
         if best then
             local color = best.timed and "|cffffcc00" or "|cffff4444"
@@ -169,7 +167,6 @@ local function UpdateCharCard(card, charKey, data)
         else
             -- box.bg:SetTexture(nil)
             box.levelText:SetText("|cff888888--|r")
-            box.frame.dungeonName = nil
 
         end
     end
