@@ -14,19 +14,23 @@ local NAME_BLOCK_W = 80   -- width reserved for name + rating on the left
 local RATE_BLOCK_W = 45
 local NUM_DUNGEONS = 8
 
--- Create dungeon list table,storing dungeon details
--- 
-local dungeonList = {
-    {shortName = "SEAT", mapId = 239},
-    {shortName = "SKY", mapId = 161},
-    {shortName = "MAIS", mapId = 560},
-    {shortName = "WIND", mapId = 557},
-    {shortName = "PIT", mapId = 556},
-    {shortName = "ACAD", mapId = 402},
-    {shortName = "MAGI", mapId = 558},
-    {shortName = "NEXU", mapId = 559},
+-- List of current season dungeons
+local mapId = {239, 161, 560, 557, 556, 402, 558, 559}
+
+local dungeonData = {
+    {shortName = "SEAT", },
+    {shortName = "SKY ", },
+    {shortName = "MAIS", },
+    {shortName = "WIND", },
+    {shortName = "PIT ", },
+    {shortName = "ACAD", },
+    {shortName = "MAGI", },
+    {shortName = "NEXU", },
 }
 
+for i in dungeonData do
+    dungeonData.data = C_ChallengeMode.GetMapUIInfo(i.mapId)
+end
 
 
 -- ---------------------------------------------------------------------------
@@ -103,8 +107,8 @@ local function CreateCharCard(parent)
     -- 8 season-best dungeon boxes in a row
     local dungeonBoxes = {}
     local xStart = RATE_BLOCK_W + KEY_W + 25  -- after name + keyBox + gvTxt gap
-    for i = 1, #dungeonData do
-        local box = CreateDungeonBox(frame, DUNGEON_W, DUNGEON_H, dungeonData[i])
+    for _,mapId ipairs(dungeonData) do
+        local box = CreateDungeonBox(frame, DUNGEON_W, DUNGEON_H, dungeonData)
         box.frame:SetPoint("LEFT", frame, "LEFT", xStart + (i - 1) * (DUNGEON_W + 4), 0)
         dungeonBoxes[i] = box
     end
