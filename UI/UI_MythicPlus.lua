@@ -14,22 +14,25 @@ local NAME_BLOCK_W = 80   -- width reserved for name + rating on the left
 local RATE_BLOCK_W = 45
 local NUM_DUNGEONS = 8
 
--- List of current season dungeons
-local mapId = {239, 161, 560, 557, 556, 402, 558, 559}
+local charCards = {}    -- charKey -> card
+local cardOrder  = {}   -- ordered array of charKeys, drives layout
 
+-- List of current season dungeons
 local dungeonData = {
-    {shortName = "SEAT", },
-    {shortName = "SKY ", },
-    {shortName = "MAIS", },
-    {shortName = "WIND", },
-    {shortName = "PIT ", },
-    {shortName = "ACAD", },
-    {shortName = "MAGI", },
-    {shortName = "NEXU", },
+    [239] = {shortName = "SEAT"}, 
+    [161] = {shortName = "SKY "}, 
+    [560] = {shortName = "MAIS"}, 
+    [557] = {shortName = "WIND"}, 
+    [556] = {shortName = "PIT "}, 
+    [402] = {shortName = "ACAD"}, 
+    [558] = {shortName = "MAGI"}, 
+    [559] = {shortName = "NEXU"} 
 }
 
-for i in dungeonData do
-    dungeonData.data = C_ChallengeMode.GetMapUIInfo(i.mapId)
+for mapId, mapData in pairs(dungeonData) do
+    local name,_,timeLimit,texture,bgTexture,_ = C_ChallengeMode.GetMapUIInfo(mapId)
+    mapData.name = name
+    mapData.texture = texture
 end
 
 
@@ -107,10 +110,12 @@ local function CreateCharCard(parent)
     -- 8 season-best dungeon boxes in a row
     local dungeonBoxes = {}
     local xStart = RATE_BLOCK_W + KEY_W + 25  -- after name + keyBox + gvTxt gap
-    for _,mapId ipairs(dungeonData) do
-        local box = CreateDungeonBox(frame, DUNGEON_W, DUNGEON_H, dungeonData)
-        box.frame:SetPoint("LEFT", frame, "LEFT", xStart + (i - 1) * (DUNGEON_W + 4), 0)
-        dungeonBoxes[i] = box
+    local i = 0
+    for mapId, data pairs(dungeonData) do
+        local box = CreateDungeonBox(frame, DUNGEON_W, DUNGEON_H, data)
+        box.frame:SetPoint("LEFT", frame, "LEFT", xStart + i * (DUNGEON_W + 4), 0)
+        dungeonBoxes[idx] = box
+        i = i + 1
     end
 
     return {
@@ -171,43 +176,36 @@ local function UpdateCharCard(card, charKey, data)
 end
 
 -- ---------------------------------------------------------------------------
--- PopulateCards
--- Creates cards once per character, updates all on each call.
--- Sorts characters alphabetically by name, repositions cards, sets scroll height.
+-- LayoutCards
+-- Creates cards for any new characters, then anchors all cards in cardOrder.
+-- Safe to call on every OnShow — creation is skipped for existing cards.
+-- To reorder: shuffle cardOrder, then call LayoutCards again.
 -- ---------------------------------------------------------------------------
-local function PopulateCards(scrollChild, cards)
-    -- Create a card for any character not yet seen
+local function LayoutCards(scrollChild)
+    -- Create cards for new characters and append to order list
     for charKey, data in pairs(TooManyAltsDB.characters or {}) do
-        if not cards[charKey] then
-            cards[charKey] = CreateCharCard(scrollChild)
+        if not charCards[charKey] then
+            local card = CreateCharCard(scrollChild)
+            UpdateCharCard(card, charKey, data)
+            charCards[charKey] = card
+            cardOrder[#cardOrder + 1] = charKey
         end
     end
 
-    -- Sort charKeys alphabetically by character name
-    local sorted = {}
-    for charKey, data in pairs(TooManyAltsDB.characters or {}) do
-        sorted[#sorted + 1] = charKey
-    end
-    table.sort(sorted, function(a, b)
-        return TooManyAltsDB.characters[a].name < TooManyAltsDB.characters[b].name
-    end)
-
-    -- Reposition and update each card
-    local yOffset = CARD_PADDING
-    for _, charKey in ipairs(sorted) do
-        local card = cards[charKey]
-        local data = TooManyAltsDB.characters[charKey]
-
+    -- Anchor cards in cardOrder sequence
+    for i, charKey in ipairs(cardOrder) do
+        local card = charCards[charKey]
         card.frame:ClearAllPoints()
-        card.frame:SetPoint("TOPLEFT",  scrollChild, "TOPLEFT",  4, -yOffset)
-        card.frame:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -4, -yOffset)
+        if i == 1 then
+            card.frame:SetPoint("TOPLEFT",  scrollChild, "TOPLEFT",   4, -CARD_PADDING)
+            card.frame:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -4, -CARD_PADDING)
+        else
+            local prev = charCards[cardOrder[i - 1]]
+            card.frame:SetPoint("TOPLEFT",  prev.frame, "BOTTOMLEFT",  0, -CARD_PADDING)
+            card.frame:SetPoint("TOPRIGHT", prev.frame, "BOTTOMRIGHT", 0, -CARD_PADDING)
+        end
         card.frame:Show()
-
-        UpdateCharCard(card, charKey, data)
-        yOffset = yOffset + CARD_HEIGHT + CARD_PADDING
     end
-
-    scrollChild:SetHeight(math.max(yOffset, 1))
 end
 
 -- ---------------------------------------------------------------------------
@@ -234,10 +232,8 @@ TooManyAlts_env.RegisterTab("mythicplus", "Mythic+", function(parent)
         scrollChild:SetWidth(width)
     end)
 
-    local cards = {}  -- charKey -> card (created once, updated on each show)
-
     f:SetScript("OnShow", function()
-        PopulateCards(scrollChild, cards)
+        LayoutCards(scrollChild)
     end)
 
     return f
