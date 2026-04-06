@@ -35,6 +35,10 @@ for mapId, mapData in pairs(dungeonData) do
     mapData.texture = texture
 end
 
+local function getMapTexture(mapId)
+    local name,_,timeLimit,texture,bgTexture,_ = C_ChallengeMode.GetMapUIInfo(mapId)
+    return texture
+end
 
 -- ---------------------------------------------------------------------------
 -- CreateDungeonBox
@@ -43,6 +47,7 @@ end
 -- ---------------------------------------------------------------------------
 local function CreateDungeonBox(parent, w, h, dungeonData)
     local frame = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+
     frame:SetSize(w, h)
 
     local bg = frame:CreateTexture(nil, "BACKGROUND")
@@ -57,8 +62,14 @@ local function CreateDungeonBox(parent, w, h, dungeonData)
     overlay:SetColorTexture(0, 0, 0, 0.5)
 
     local levelText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    levelText:SetPoint("CENTER", frame, "CENTER", 0, 0)
+    levelText:SetPoint("TOP", frame, "TOP", 0, -2)
     levelText:SetText("--")
+
+    local nameText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    nameText:SetPoint("BOTTOM", frame, "BOTTOM", 0, 2)
+    if dungeonData then
+        nameText:SetText(dungeonData.shortName) else nameText:SetText("--")
+    end
 
     frame:EnableMouse(true)
     frame:SetScript("OnEnter", function(self)
@@ -72,7 +83,7 @@ local function CreateDungeonBox(parent, w, h, dungeonData)
         GameTooltip:Hide()
     end)
 
-    return { frame = frame, bg = bg, overlay = overlay, levelText = levelText }
+    return { frame = frame, bg = bg, overlay = overlay, levelText = levelText, nameText = nameText}
 end
 
 -- ---------------------------------------------------------------------------
@@ -127,27 +138,32 @@ local function CreateCharCard(parent)
     }
 end
 
+
+
 -- ---------------------------------------------------------------------------
 -- UpdateCharCard
 -- Fills a card with live data. Falls back to "--" / no texture when
 -- data.mythicplus is nil (data layer not yet implemented).
 -- ---------------------------------------------------------------------------
-local function UpdateCharCard(card, charKey, data)
-    local mp = data.mythicplus  -- may be nil
+local function UpdateCharCard(card, data)
+    local mp = data.mythicPlus  -- may be nil
 
     -- Name and rating
     card.nameTxt:SetText(TooManyAlts_env.ColorWithClass(data.class, data.name))
-    -- card.ratingTxt:SetText(mp and tostring(mp.rating) or "|cff888888--|r")
-    card.ratingTxt:SetText(mp and tostring(mp.rating) or "|cff8888882403|r")
+    card.ratingTxt:SetText(mp and tostring(mp.rating) or "|cff888888--|r")
+    -- card.ratingTxt:SetText(mp and tostring(mp.rating) or "|cff8888882403|r")
     
     -- Great Vault
     -- card.gvTxt:SetText(mp and (mp.greatVault.completed .. "/8") or "|cff888888--|r")
-    card.gvTxt:SetText(mp and (mp.greatVault.completed .. "/8") or "|cff8888883/8|r")
+    card.gvTxt:SetText(mp and mp.greatVault and (mp.greatVault.completed .. "/8") or "|cff8888883/8|r")
 
     -- Current keystone box
+    if mp then print(tostring(mp.currentKey.mapId)) end
     if mp and mp.currentKey then
-        card.keyBox.levelText:SetText("|cffffcc00+" .. mp.currentKey.level .. "|r")
-        card.keyBox.frame.dungeonName = mp.currentKey.mapName
+        card.keyBox.levelText:SetText("|cffffcc00" .. mp.currentKey.level .. "|r")
+        card.keyBox.frame.dungeonName = dungeonData[mp.currentKey.mapId].name
+        card.keyBox.bg:SetTexture(getMapTexture(mp.currentKey.mapId))
+        card.keyBox.nameText:SetText("|cffffcc00" .. dungeonData[mp.currentKey.mapId].shortName .. "|r")
     else
         -- card.keyBox.bg:SetTexture(nil)
         card.keyBox.levelText:SetText("|cff888888--|r")
@@ -158,6 +174,7 @@ local function UpdateCharCard(card, charKey, data)
     local mapTable = C_ChallengeMode.GetMapTable() or {}
     for i = 1, #mapTable do
         local box = card.dungeonBoxes[mapTable[i]]
+        box.frame.dungeonName = dungeonData[mapTable[i]].name
         local best = mp and mp.seasonBests and mp.seasonBests[i]
 
         if best then
@@ -183,7 +200,7 @@ local function LayoutCards(scrollChild)
     for charKey, data in pairs(TooManyAltsDB.characters or {}) do
         if not charCards[charKey] then
             local card = CreateCharCard(scrollChild)
-            UpdateCharCard(card, charKey, data)
+            UpdateCharCard(card, data)
             charCards[charKey] = card
             cardOrder[#cardOrder + 1] = charKey
         end
