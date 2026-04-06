@@ -2,6 +2,8 @@
 -- Constants and data saving logic
 local AddonName, TooManyAlts_env = ...
 
+
+
 TooManyAlts_env.MAX_LEVEL = 90
 
 TooManyAlts_env.SLOTS = {
@@ -23,14 +25,21 @@ TooManyAlts_env.SLOTS = {
     { id = 17, name = "Off Hand", enchantable = false },
 }
 
+-- Check current season, if it is different than what we already have saved, recalculate dungeon maps and the dungeon maps data
 
-
-
+local function setSessionData()
+    -- Store char name, realm, and charKey to global
+    TooManyAlts_env.playerName = UnitName("player")
+    TooManyAlts_env.realmName = GetRealmName()
+    TooManyAlts_env.charKey = TooManyAlts_env.playerName.. "-" .. TooManyAlts_env.realmName
+    print("TMA: Session Data Set.")
+end
 
 local changedSlots = {}  -- slotID → true, accumulates changed slots until debounce fires
 local eventFrame = CreateFrame("Frame")
 
 local function Init()
+    setSessionData()
     eventFrame:UnregisterEvent("ADDON_LOADED")
     TooManyAltsDB = TooManyAltsDB or {}
     TooManyAltsDB.characters = TooManyAltsDB.characters or {} --Stores character info
@@ -43,8 +52,12 @@ local eventHandlers = {
         if addonName == AddonName then Init() end
     end,
     PLAYER_LOGIN = function()
-        local ok, err = pcall(TooManyAlts_env.saveGear)
-        if not ok then print("TooManyAlts ERROR: " .. tostring(err)) end
+        local ok1, err1 = pcall(TooManyAlts_env.saveGear) -- Save characters gear on login
+        if not ok1 then print("TooManyAlts (saveGear) ERROR: " .. tostring(err1)) end
+        ok1 = false
+        err1 = nil
+        local ok2, err2 = pcall (TooManyAlts_env.getMythicPlusStats) -- Save characters M+ stats on login
+        if not ok2 then print("TooManyAlts (getMythicPlusStats) ERROR: " .. tostring(err2)) end
     end,
     PLAYER_EQUIPMENT_CHANGED = function(slot)
         changedSlots[slot] = true
