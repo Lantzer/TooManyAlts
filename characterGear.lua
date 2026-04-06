@@ -53,12 +53,8 @@ end
 
 -- slotsToSave: nil = full save (login), table of slotID→true = partial save (equipment change)
 function TooManyAlts_env.saveGear(slotsToSave)
-    local name = UnitName("player")
-    local realm = GetRealmName()
-    local charKey = name .. "-" .. realm
-
     -- Partial save with no existing record: fall back to full save
-    if slotsToSave and not TooManyAltsDB.characters[charKey] then
+    if slotsToSave and not TooManyAltsDB.characters[TooManyAlts_env.charKey] then
         TooManyAlts_env.saveGear(nil)
         return
     end
@@ -67,7 +63,7 @@ function TooManyAlts_env.saveGear(slotsToSave)
         local avgItemLvl, avgILvlEquip = GetAverageItemLevel()
 
         if slotsToSave then
-            local charData = TooManyAltsDB.characters[charKey]
+            local charData = TooManyAltsDB.characters[TooManyAlts_env.charKey]
             for slotID, slotData in pairs(gear) do
                 charData.gear[slotID] = slotData
             end
@@ -75,18 +71,18 @@ function TooManyAlts_env.saveGear(slotsToSave)
             charData.avgItemLvl = avgItemLvl or 0
             charData.avgItemLvlEquip = avgILvlEquip or 0
         else
-            TooManyAltsDB.characters[charKey] = {
-                name = name,
-                realm = realm,
-                level = UnitLevel("player"),
-                class = select(2, UnitClass("player")),
-                avgItemLvl = avgItemLvl or 0,
-                avgItemLvlEquip = avgILvlEquip or 0,
-                gear = gear,
-            }
+            local charData = TooManyAltsDB.characters[TooManyAlts_env.charKey] or {}
+            TooManyAltsDB.characters[TooManyAlts_env.charKey] = charData
+            charData.name = TooManyAlts_env.playerName
+            charData.realm = TooManyAlts_env.realmName
+            charData.level = UnitLevel("player")
+            charData.class = select(2, UnitClass("player"))
+            charData.avgItemLvl = avgItemLvl or 0
+            charData.avgItemLvlEquip = avgILvlEquip or 0
+            charData.gear = gear
         end
 
-        print("TooManyAlts: Gear saved for " .. charKey)
+        print("TooManyAlts: Gear saved for " .. TooManyAlts_env.charKey)
     end
 
     local pending = 0
