@@ -40,6 +40,10 @@ local function getMapTexture(mapId)
     return texture
 end
 
+function TooManyAlts_env.getCharCard(charKey)
+    if charKey and charCards[charKey] then return charCards[charKey] end
+end
+
 -- ---------------------------------------------------------------------------
 -- CreateDungeonBox
 -- Reusable widget: dungeon artwork bg + dark overlay + centered level text.
@@ -159,13 +163,19 @@ local function UpdateCharCard(card, data)
 
     -- Current keystone box
     if mp then print(tostring(mp.currentKey.mapId)) end
-    if mp and mp.currentKey then
-        card.keyBox.levelText:SetText("|cffffcc00" .. mp.currentKey.level .. "|r")
-        card.keyBox.frame.dungeonName = dungeonData[mp.currentKey.mapId].name
-        card.keyBox.bg:SetTexture(getMapTexture(mp.currentKey.mapId))
-        card.keyBox.nameText:SetText("|cffffcc00" .. dungeonData[mp.currentKey.mapId].shortName .. "|r")
+    if mp and mp.currentKey and mp.currentKey.level then
+        if mp.currentKey.level then 
+            card.keyBox.levelText:SetText("|cffffcc00" .. mp.currentKey.level .. "|r")
+        else
+            card.keyBox.levelText:SetText("cffffcc00--|r")
+        end
+
+        if mp.currentKey.mapId then
+            card.keyBox.frame.dungeonName = dungeonData[mp.currentKey.mapId].name
+            card.keyBox.bg:SetTexture(getMapTexture(mp.currentKey.mapId))
+            card.keyBox.nameText:SetText("|cffffcc00" .. dungeonData[mp.currentKey.mapId].shortName .. "|r")           
+        end
     else
-        -- card.keyBox.bg:SetTexture(nil)
         card.keyBox.levelText:SetText("|cff888888--|r")
         card.keyBox.frame.dungeonName = nil
     end

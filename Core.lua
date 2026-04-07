@@ -52,12 +52,13 @@ local eventHandlers = {
         if addonName == AddonName then Init() end
     end,
     PLAYER_LOGIN = function()
-        local ok1, err1 = pcall(TooManyAlts_env.saveGear) -- Save characters gear on login
-        if not ok1 then print("TooManyAlts (saveGear) ERROR: " .. tostring(err1)) end
-        ok1 = false
-        err1 = nil
-        local ok2, err2 = pcall (TooManyAlts_env.getMythicPlusStats) -- Save characters M+ stats on login
-        if not ok2 then print("TooManyAlts (getMythicPlusStats) ERROR: " .. tostring(err2)) end
+        local ok, err = pcall(TooManyAlts_env.saveGear) -- Save characters gear on login
+        if not ok then print("TooManyAlts (saveGear) ERROR: " .. tostring(err)) end
+    end,
+    PLAYER_ENTERING_WORLD = function(isInitialLogin, isReloadingUi)
+        if not isInitialLogin and not isReloadingUi then return end -- prevents running whenever we change zones
+        local ok, err = pcall(TooManyAlts_env.getMythicPlusStats) -- Save characters M+ stats once data is ready
+        if not ok then print("TooManyAlts (getMythicPlusStats) ERROR: " .. tostring(err)) end
     end,
     PLAYER_EQUIPMENT_CHANGED = function(slot)
         changedSlots[slot] = true
@@ -66,6 +67,12 @@ local eventHandlers = {
             changedSlots[17] = true
         end
         TooManyAlts_env.scheduleSaveGear(changedSlots)
+    end,
+    CHALLENGE_MODE_COMPLETED = function()
+        local ok, err = pcall(TooManyAlts_env.getMythicPlusStats) -- Save characters M+ when dungeon completes -> update rating and new key if it was our key
+        if not ok then print("TooManyAlts (getMythicPlusStats) ERROR: " .. tostring(err)) return end
+        ok, err = pcall(TooManyAlts_env.updateCharCard(TooManyAlts_env.getCharCard(TooManyAlts_env.charKey), TooManyAltsDB.characters[TooManyAlts_env.charKey]))
+        if not ok then print("TooManyAlts ERROR: " .. tostring(err)) end
     end,
 }
 
