@@ -17,6 +17,15 @@ SlashCmdList["TOOMANYALTS"] = function(msg)
         print("  /tma clear  - Clear all saved character data")
         print("  /tma help   - Show this help message")
 
+    elseif msg =="dng" then
+        local ok, err = pcall(TooManyAlts_env.getMythicPlusStats) -- Save characters M+ when dungeon completes -> update rating and new key if it was our key
+        if not ok then print("TooManyAlts (getMythicPlusStats) ERROR: " .. tostring(err)) return end
+        print(tostring(TooManyAlts_env.charKey))
+        local card = TooManyAlts_env.getCharCard(TooManyAlts_env.charKey)
+        if card then
+            ok, err = pcall(TooManyAlts_env.updateCharCard, card, TooManyAltsDB.characters[TooManyAlts_env.charKey])
+            if not ok then print("TooManyAlts ERROR: " .. tostring(err)) end
+        end
     else
         if TooManyAlts_env.mainFrame:IsShown() then
             TooManyAlts_env.mainFrame:Hide()

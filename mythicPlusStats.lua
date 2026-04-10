@@ -10,6 +10,7 @@ function TooManyAlts_env.getMythicPlusStats()
         gv m+ progress      "intimeInfo, overtimeInfo = C_MythicPlus.GetSeasonBestForMap(mapChallengeModeID)"o
 
     ]]
+    if TooManyAlts_env.level < TooManyAlts_env.MAX_LEVEL then return end
 
     local charData = TooManyAltsDB.characters[TooManyAlts_env.charKey]
     print("charData: " .. tostring(charData))

@@ -17,6 +17,9 @@ local NUM_DUNGEONS = 8
 local charCards = {}    -- charKey -> card
 local cardOrder  = {}   -- ordered array of charKeys, drives layout
 
+local cardHolderFrame = CreateFrame("Frame", nil, UIParent)
+cardHolderFrame:Hide()
+
 -- List of current season dungeons
 local dungeonData = {
     [239] = {shortName = "SEAT"}, 
@@ -145,11 +148,11 @@ end
 
 
 -- ---------------------------------------------------------------------------
--- UpdateCharCard
+-- updateCharCard
 -- Fills a card with live data. Falls back to "--" / no texture when
 -- data.mythicplus is nil (data layer not yet implemented).
 -- ---------------------------------------------------------------------------
-local function UpdateCharCard(card, data)
+function TooManyAlts_env.updateCharCard(card, data)
     local mp = data.mythicPlus  -- may be nil
 
     -- Name and rating
@@ -199,26 +202,27 @@ local function UpdateCharCard(card, data)
     end
 end
 
--- ---------------------------------------------------------------------------
--- LayoutCards
--- Creates cards for any new characters, then anchors all cards in cardOrder.
--- Safe to call on every OnShow — creation is skipped for existing cards.
--- To reorder: shuffle cardOrder, then call LayoutCards again.
--- ---------------------------------------------------------------------------
-local function LayoutCards(scrollChild)
-    -- Create cards for new characters and append to order list
+function TooManyAlts_env.InitMythicPlusCards()
     for charKey, data in pairs(TooManyAltsDB.characters or {}) do
-        if not charCards[charKey] then
-            local card = CreateCharCard(scrollChild)
-            UpdateCharCard(card, data)
+        if data.level >= TooManyAlts_env.MAX_LEVEL then
+            local card = CreateCharCard(cardHolderFrame)
+            TooManyAlts_env.updateCharCard(card, data)
             charCards[charKey] = card
             cardOrder[#cardOrder + 1] = charKey
         end
     end
+end
 
-    -- Anchor cards in cardOrder sequence
+-- ---------------------------------------------------------------------------
+-- LayoutCards
+-- Reparents cards from the holder frame into the scroll child and anchors
+-- them in cardOrder sequence.
+-- To reorder: shuffle cardOrder, then call LayoutCards again.
+-- ---------------------------------------------------------------------------
+local function LayoutCards(scrollChild)
     for i, charKey in ipairs(cardOrder) do
         local card = charCards[charKey]
+        card.frame:SetParent(scrollChild)
         card.frame:ClearAllPoints()
         if i == 1 then
             card.frame:SetPoint("TOPLEFT",  scrollChild, "TOPLEFT",   4, -CARD_PADDING)

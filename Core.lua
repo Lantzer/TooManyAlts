@@ -32,6 +32,7 @@ local function setSessionData()
     TooManyAlts_env.playerName = UnitName("player")
     TooManyAlts_env.realmName = GetRealmName()
     TooManyAlts_env.charKey = TooManyAlts_env.playerName.. "-" .. TooManyAlts_env.realmName
+    TooManyAlts_env.level = UnitLevel("player")
     print("TMA: Session Data Set.")
 end
 
@@ -54,6 +55,7 @@ local eventHandlers = {
     PLAYER_LOGIN = function()
         local ok, err = pcall(TooManyAlts_env.saveGear) -- Save characters gear on login
         if not ok then print("TooManyAlts (saveGear) ERROR: " .. tostring(err)) end
+        TooManyAlts_env.InitMythicPlusCards()
     end,
     PLAYER_ENTERING_WORLD = function(isInitialLogin, isReloadingUi)
         if not isInitialLogin and not isReloadingUi then return end -- prevents running whenever we change zones
@@ -71,8 +73,12 @@ local eventHandlers = {
     CHALLENGE_MODE_COMPLETED = function()
         local ok, err = pcall(TooManyAlts_env.getMythicPlusStats) -- Save characters M+ when dungeon completes -> update rating and new key if it was our key
         if not ok then print("TooManyAlts (getMythicPlusStats) ERROR: " .. tostring(err)) return end
-        ok, err = pcall(TooManyAlts_env.updateCharCard(TooManyAlts_env.getCharCard(TooManyAlts_env.charKey), TooManyAltsDB.characters[TooManyAlts_env.charKey]))
-        if not ok then print("TooManyAlts ERROR: " .. tostring(err)) end
+        if not TooManyAlts_env.charKey then return end
+        local card = TooManyAlts_env.getCharCard(TooManyAlts_env.charKey)
+        if card then
+            ok, err = pcall(TooManyAlts_env.updateCharCard, card, TooManyAltsDB.characters[TooManyAlts_env.charKey])
+            if not ok then print("TooManyAlts ERROR: " .. tostring(err)) end
+        end
     end,
 }
 
