@@ -222,7 +222,7 @@ TooManyAlts_env.RegisterTab("characters", "Characters", function(parent)
                 UpdateSlotRow(slotRows[slotID], data.gear[slotID])
             end
         end
-    end)
+    end, true)
 
     layout.frame:SetScript("OnShow", layout.populate)
     return layout.frame

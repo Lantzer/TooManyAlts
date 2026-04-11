@@ -139,7 +139,8 @@ end
 -- from TooManyAltsDB and auto-selects a character (restoring the previous
 -- selection if it still exists, otherwise defaulting to the first entry).
 -- ---------------------------------------------------------------------------
-function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent)
+--optional show under max level char
+function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent, maxLevelOnly)
     local charButtons  = {}
     local selectedChar = nil
     local onSelect     = nil  -- set after buildContent runs
@@ -194,30 +195,33 @@ function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent)
 
         local yOffset = 25
         for charKey, data in pairs(TooManyAltsDB.characters or {}) do
-            local btn = CreateFrame("Button", nil, leftPanel)
-            btn:SetSize(110, 30)
-            btn:SetPoint("TOPLEFT", leftPanel, "TOPLEFT", 4, -yOffset)
+            if not maxLevelOnly == true or data.level >= TooManyAlts_env.MAX_LEVEL then
+                local btn = CreateFrame("Button", nil, leftPanel)
+                btn:SetSize(110, 30)
+                btn:SetPoint("TOPLEFT", leftPanel, "TOPLEFT", 4, -yOffset)
 
-            local bg = btn:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0.2, 0.5, 1, 0.2)
-            bg:Hide()
-            btn.bg = bg
+                local bg = btn:CreateTexture(nil, "BACKGROUND")
+                bg:SetAllPoints()
+                bg:SetColorTexture(0.2, 0.5, 1, 0.2)
+                bg:Hide()
+                btn.bg = bg
 
-            local hl = btn:CreateTexture(nil, "HIGHLIGHT")
-            hl:SetAllPoints()
-            hl:SetColorTexture(1, 1, 1, 0.1)
+                local hl = btn:CreateTexture(nil, "HIGHLIGHT")
+                hl:SetAllPoints()
+                hl:SetColorTexture(1, 1, 1, 0.1)
 
-            btn:SetNormalFontObject("GameFontNormalSmall")
-            btn:SetText(TooManyAlts_env.ColorWithClass(data.class, data.name))
-            btn.charKey = charKey
+                btn:SetNormalFontObject("GameFontNormalSmall")
+                btn:SetText(TooManyAlts_env.ColorWithClass(data.class, data.name))
+                btn.charKey = charKey
 
-            btn:SetScript("OnClick", function(self)
-                SelectCharacter(self.charKey)
-            end)
+                btn:SetScript("OnClick", function(self)
+                    SelectCharacter(self.charKey)
+                end)
+
 
             charButtons[charKey] = btn
             yOffset = yOffset + 35
+            end
         end
 
         -- Restore previous selection or fall back to the first entry
