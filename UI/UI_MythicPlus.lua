@@ -42,6 +42,10 @@ local function getMapTexture(mapId)
     local name,_,timeLimit,texture,bgTexture,_ = C_ChallengeMode.GetMapUIInfo(mapId)
     return texture
 end
+ 
+function TooManyAlts_env.getMapShortName(mapId)
+    if mapId and dungeonData[mapId] then return dungeonData[mapId] end
+end
 
 function TooManyAlts_env.getCharCard(charKey)
     if charKey and charCards[charKey] then return charCards[charKey] end
@@ -260,7 +264,14 @@ TooManyAlts_env.RegisterTab("mythicplus", "Mythic+", function(parent)
         scrollChild:SetWidth(width)
     end)
 
+    -- update cards with newest data before displaying preinitialized cards
     f:SetScript("OnShow", function()
+        for charKey, card in pairs(charCards) do
+            local data = TooManyAltsDB.characters[charKey]
+            if data then
+                TooManyAlts_env.updateCharCard(card, data)
+            end
+        end
         LayoutCards(scrollChild)
     end)
 

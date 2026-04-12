@@ -139,7 +139,6 @@ end
 -- from TooManyAltsDB and auto-selects a character (restoring the previous
 -- selection if it still exists, otherwise defaulting to the first entry).
 -- ---------------------------------------------------------------------------
---optional show under max level char
 function TooManyAlts_env.CreateSideCharacterTabLayout(parent, buildContent, maxLevelOnly)
     local charButtons  = {}
     local selectedChar = nil

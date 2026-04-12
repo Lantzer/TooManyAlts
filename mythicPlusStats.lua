@@ -13,7 +13,6 @@ function TooManyAlts_env.getMythicPlusStats()
     if TooManyAlts_env.level < TooManyAlts_env.MAX_LEVEL then return end
 
     local charData = TooManyAltsDB.characters[TooManyAlts_env.charKey]
-    print("charData: " .. tostring(charData))
     if not charData then return end
 
     charData.mythicPlus = charData.mythicPlus or {}
@@ -22,7 +21,7 @@ function TooManyAlts_env.getMythicPlusStats()
     local currentKey = mp.currentKey
 
     local mapId = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
-    print("mapId: " .. tostring(mapId))
+        if mapId then print("mapId: " .. tostring(mapId) .. " " .. tostring(TooManyAlts_env.getMapShortName(mapId).shortName)) end
     if mapId then currentKey.mapId = mapId or nil end
 
     local level = C_MythicPlus.GetOwnedKeystoneLevel()
@@ -31,5 +30,6 @@ function TooManyAlts_env.getMythicPlusStats()
     print("currentKey.level: " .. tostring(currentKey.level))
 
     local bestSeasonScore, bestSeason = C_MythicPlus.GetSeasonBestMythicRatingFromThisExpansion()
+        if bestSeasonScore then print("rating: " .. tostring(bestSeasonScore)) end
     if bestSeasonScore then mp.rating = bestSeasonScore or 69 end
 end
