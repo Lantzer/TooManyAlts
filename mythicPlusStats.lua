@@ -12,8 +12,10 @@ function TooManyAlts_env.getMythicPlusStats()
     ]]
     if TooManyAlts_env.level < TooManyAlts_env.MAX_LEVEL then return end
 
+    if not TooManyAlts_env.charKey then print("Error: no charKey in TMA_env") end
+
     local charData = TooManyAltsDB.characters[TooManyAlts_env.charKey]
-    if not charData then return end
+    if not charData then print("Error: No character table entry for current character") end
 
     charData.mythicPlus = charData.mythicPlus or {}
     charData.mythicPlus.currentKey = charData.mythicPlus.currentKey or {}
@@ -29,7 +31,13 @@ function TooManyAlts_env.getMythicPlusStats()
     if level then currentKey.level = level or 0 end
     print("currentKey.level: " .. tostring(currentKey.level))
 
-    local bestSeasonScore, bestSeason = C_MythicPlus.GetSeasonBestMythicRatingFromThisExpansion()
-        if bestSeasonScore then print("rating: " .. tostring(bestSeasonScore)) end
-    if bestSeasonScore then mp.rating = bestSeasonScore or 69 end
+    C_Timer.After(3, function()
+        local bestSeasonScore, bestSeason = C_MythicPlus.GetSeasonBestMythicRatingFromThisExpansion()
+        if not bestSeasonScore then
+            return
+        else
+            print("rating: " .. tostring(bestSeasonScore))
+            mp.rating = bestSeasonScore
+        end
+    end)
 end
